@@ -1,0 +1,41 @@
+name: Auto publish to Blogger
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # every 6 hours (UTC)
+  workflow_dispatch:         # manual run button
+    inputs:
+      is_draft:
+        description: "Save as draft? (true = draft, false = publish live)"
+        required: false
+        default: "true"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blogger-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generate and publish article
+        run: node publish.js
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          BLOGGER_BLOG_ID: ${{ secrets.BLOGGER_BLOG_ID }}
+          # Repository variables (Settings > Secrets and variables > Actions > Variables), all optional:
+          IS_DRAFT: ${{ inputs.is_draft || vars.IS_DRAFT || 'true' }}
+          LANGUAGE: ${{ vars.LANGUAGE || 'Arabic' }}
+          CATEGORIES: ${{ vars.CATEGORIES }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
